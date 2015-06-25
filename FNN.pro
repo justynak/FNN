@@ -32,7 +32,7 @@ SOURCES += main.cpp\
     c3ddataseries.cpp \
     c2ddataseries.cpp \
     icmultipledimdataseries.cpp \
-    ../qcustomplot/qcustomplot.cpp
+    qcustomplot.cpp
 
 HEADERS  += mainwindow.h \
     icdata.h \
@@ -54,6 +54,6 @@ HEADERS  += mainwindow.h \
     c3ddataseries.h \
     c2ddataseries.h \
     icmultipledimdataseries.h \
-    ../qcustomplot/qcustomplot.h
+    qcustomplot.h
 
 FORMS    += mainwindow.ui

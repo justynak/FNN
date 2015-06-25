@@ -3,7 +3,7 @@
 
 #include "icsolver.h"
 
-class ICDataGenerator : ICSolver
+class ICDataGenerator : public ICSolver
 {
 public:
     ICDataGenerator() : _sampleCount(0) {}

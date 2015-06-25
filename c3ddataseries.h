@@ -5,7 +5,7 @@
 #include <QList>
 #include "icmultipledimdataseries.h"
 
-class C3DDataSeries : ICMultipleDimDataSeries<QVector3D>
+class C3DDataSeries : public ICMultipleDimDataSeries<QVector3D>
 {
 public:
     C3DDataSeries();

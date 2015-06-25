@@ -8,7 +8,7 @@
 
 template< class T >
 
-class ICMultipleDimDataSeries : ICData
+class ICMultipleDimDataSeries : public ICData
 {
 protected:
     QList<T> _data;
@@ -19,23 +19,24 @@ public:
     ICMultipleDimDataSeries(QList<T> data) : _data(data) {}
     virtual ~ICMultipleDimDataSeries() {_data.clear();}
 
-    bool AttachPoint(T p)
+    virtual bool AttachPoint(T p)
     {
         _data.append(p);
         return true;
     }
 
-    bool RemovePoint(T p)
+    virtual bool RemovePoint(T p)
     {
         return _data.removeOne(p);
     }
 
-    bool ReplacePoint(T p, int i)
+    virtual bool ReplacePoint(T p, int i)
     {
-        return _data.replace(i, p);
+        _data.replace(i, p);
+        return true;
     }
 
-    T operator[] (int number)
+    virtual T operator[] (int number)
     {
         if(number < _data.size())
             return _data[number];
@@ -43,7 +44,7 @@ public:
             return T();
     }
 
-    int GetSampleNumber()
+    virtual int GetSampleNumber()
     {
         return _data.size();
     }
