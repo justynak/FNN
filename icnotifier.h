@@ -6,7 +6,7 @@ class ICNotifier
 {
 public:
     ICNotifier();
-    ~ICNotifier();
+    virtual ~ICNotifier();
 };
 
 #endif // ICNOTIFIER_H

@@ -7,7 +7,7 @@ class ICDataGenerator : ICSolver
 {
 public:
     ICDataGenerator();
-    ~ICDataGenerator();
+    virtual ~ICDataGenerator();
 };
 
 #endif // ICDATAGENERATOR_H

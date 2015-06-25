@@ -7,7 +7,7 @@ class CMutualInformationSolver  : ICSolver
 {
 public:
     CMutualInformationSolver();
-    ~CMutualInformationSolver();
+    virtual ~CMutualInformationSolver();
 };
 
 #endif // CMUTUALINFORMATIONSOLVER_H

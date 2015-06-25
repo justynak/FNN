@@ -7,7 +7,7 @@ class CFNNData : ICData
 {
 public:
     CFNNData();
-    ~CFNNData();
+    virtual ~CFNNData();
 };
 
 #endif // CFNNDATA_H

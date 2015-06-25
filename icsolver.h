@@ -6,7 +6,7 @@ class ICSolver
 {
 public:
     ICSolver();
-    ~ICSolver();
+    virtual ~ICSolver();
 };
 
 #endif // ICSOLVER_H

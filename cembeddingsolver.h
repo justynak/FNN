@@ -8,7 +8,7 @@ class CEmbeddingSolver : ICSolver
 {
 public:
     CEmbeddingSolver();
-    ~CEmbeddingSolver();
+    virtual ~CEmbeddingSolver();
 };
 
 #endif // CEMBEDDINGSOLVER_H

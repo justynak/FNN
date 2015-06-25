@@ -29,7 +29,10 @@ SOURCES += main.cpp\
     cembeddingsolver.cpp \
     chenongenerator.cpp \
     clorentzgenerator.cpp \
-    cikedagenerator.cpp
+    cikedagenerator.cpp \
+    c3ddataseries.cpp \
+    c2ddataseries.cpp \
+    icmultipledimdataseries.cpp
 
 HEADERS  += mainwindow.h \
     icdata.h \
@@ -47,6 +50,9 @@ HEADERS  += mainwindow.h \
     cembeddingsolver.h \
     chenongenerator.h \
     clorentzgenerator.h \
-    cikedagenerator.h
+    cikedagenerator.h \
+    c3ddataseries.h \
+    c2ddataseries.h \
+    icmultipledimdataseries.h
 
 FORMS    += mainwindow.ui

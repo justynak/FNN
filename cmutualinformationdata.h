@@ -7,7 +7,7 @@ class CMutualInformationData : ICData
 {
 public:
     CMutualInformationData();
-    ~CMutualInformationData();
+    virtual ~CMutualInformationData();
 };
 
 #endif // CMUTUALINFORMATIONDATA_H

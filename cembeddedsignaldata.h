@@ -7,7 +7,7 @@ class CEmbeddedSignalData : ICData
 {
 public:
     CEmbeddedSignalData();
-    ~CEmbeddedSignalData();
+    virtual ~CEmbeddedSignalData();
 };
 
 #endif // CEMBEDDEDSIGNALDATA_H

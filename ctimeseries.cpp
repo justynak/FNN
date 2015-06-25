@@ -1,12 +1,23 @@
 #include "ctimeseries.h"
 
-CTimeseries::CTimeseries()
+CTimeseriesOneDimension::CTimeseriesOneDimension()
 {
 
 }
 
-CTimeseries::~CTimeseries()
+CTimeseriesOneDimension::~CTimeseriesOneDimension()
 {
 
 }
 
+
+
+CTimeseriesMultiDimension::CTimeseriesMultiDimension()
+{
+
+}
+
+CTimeseriesMultiDimension::~CTimeseriesMultiDimension()
+{
+
+}

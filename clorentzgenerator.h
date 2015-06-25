@@ -7,7 +7,7 @@ class CLorentzGenerator : ICDataGenerator
 {
 public:
     CLorentzGenerator();
-    ~CLorentzGenerator();
+    virtual ~CLorentzGenerator();
 };
 
 #endif // CLORENTZGENERATOR_H

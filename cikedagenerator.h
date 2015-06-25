@@ -8,7 +8,7 @@ class CIkedaGenerator : ICDataGenerator
 {
 public:
     CIkedaGenerator();
-    ~CIkedaGenerator();
+    virtual ~CIkedaGenerator();
 };
 
 #endif // CIKEDAGENERATOR_H

@@ -6,7 +6,7 @@ class ICSolution
 {
 public:
     ICSolution();
-    ~ICSolution();
+    virtual ~ICSolution();
 };
 
 #endif // ICSOLUTION_H

@@ -7,7 +7,7 @@ class CHenonGenerator : ICDataGenerator
 {
 public:
     CHenonGenerator();
-    ~CHenonGenerator();
+    virtual ~CHenonGenerator();
 };
 
 #endif // CHENONGENERATOR_H

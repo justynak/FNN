@@ -7,7 +7,7 @@ class CFNNSolver : ICSolver
 {
 public:
     CFNNSolver();
-    ~CFNNSolver();
+    virtual ~CFNNSolver();
 };
 
 #endif // CFNNSOLVER_H

@@ -6,7 +6,7 @@ class ICAlgorithm
 {
 public:
     ICAlgorithm();
-    ~ICAlgorithm();
+    virtual ~ICAlgorithm();
 };
 
 #endif // ICALGORITHM_H
