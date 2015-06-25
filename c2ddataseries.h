@@ -1,5 +1,6 @@
 #ifndef C2DDATASERIES_H
 #define C2DDATASERIES_H
+
 #include <QList>
 #include <QVector2D>
 #include "icmultipledimdataseries.h"
