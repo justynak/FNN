@@ -4,8 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-
+QT       += core gui printsupport
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = FNN
@@ -32,7 +31,8 @@ SOURCES += main.cpp\
     cikedagenerator.cpp \
     c3ddataseries.cpp \
     c2ddataseries.cpp \
-    icmultipledimdataseries.cpp
+    icmultipledimdataseries.cpp \
+    ../qcustomplot/qcustomplot.cpp
 
 HEADERS  += mainwindow.h \
     icdata.h \
@@ -53,6 +53,7 @@ HEADERS  += mainwindow.h \
     cikedagenerator.h \
     c3ddataseries.h \
     c2ddataseries.h \
-    icmultipledimdataseries.h
+    icmultipledimdataseries.h \
+    ../qcustomplot/qcustomplot.h
 
 FORMS    += mainwindow.ui
