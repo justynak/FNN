@@ -6,21 +6,41 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>641</width>
-    <height>491</height>
+    <width>1272</width>
+    <height>450</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
+   <widget class="QCustomPlot" name="plot2" native="true">
+    <property name="geometry">
+     <rect>
+      <x>420</x>
+      <y>10</y>
+      <width>401</width>
+      <height>381</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QCustomPlot" name="plot3" native="true">
+    <property name="geometry">
+     <rect>
+      <x>830</x>
+      <y>10</y>
+      <width>431</width>
+      <height>381</height>
+     </rect>
+    </property>
+   </widget>
    <widget class="QCustomPlot" name="plot" native="true">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>0</x>
       <y>10</y>
-      <width>361</width>
-      <height>271</height>
+      <width>401</width>
+      <height>381</height>
      </rect>
     </property>
    </widget>
@@ -30,7 +50,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>641</width>
+     <width>1272</width>
      <height>21</height>
     </rect>
    </property>

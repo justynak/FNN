@@ -70,7 +70,7 @@ void CIkedaGenerator::Solve()
         xk = xknext;
         _outputData->AttachPoint(QVector3D(xk, yk, zk));
 
-        qDebug() << QObject::tr("Point %4 calculated: %1, %2, %3 \n").arg(xk).arg(yk).arg(zk).arg(i);
+        //qDebug() << QObject::tr("Point %4 calculated: %1, %2, %3 \n").arg(xk).arg(yk).arg(zk).arg(i);
     }
 }
 

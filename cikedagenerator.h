@@ -16,9 +16,9 @@ public:
     virtual ~CIkedaGenerator();
 
     double GetA();
-    double GetB ();
-    double GetC ();
-    double GetD ();
+    double GetB();
+    double GetC();
+    double GetD();
 
     void SetA (qreal a);
     void SetB (qreal b);

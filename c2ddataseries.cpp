@@ -20,7 +20,6 @@ C2DDataSeries::~C2DDataSeries()
 
 QList<qreal> C2DDataSeries::GetXLine()
 {
-    /*
     QList<qreal> xlist;
 
     foreach (QVector2D point, _data)
@@ -28,13 +27,11 @@ QList<qreal> C2DDataSeries::GetXLine()
         xlist.append(point.x());
     }
 
-    return xlist;
-    */
+    return xlist;  
 }
 
 QList<qreal> C2DDataSeries::GetYLine()
 {
-    /*
     QList<qreal> ylist;
 
     foreach (QVector2D point, _data)
@@ -42,8 +39,7 @@ QList<qreal> C2DDataSeries::GetYLine()
         ylist.append(point.y());
     }
 
-    return ylist;
-    */
+    return ylist;   
 }
 
 void C2DDataSeries::SetXLine(QList<qreal> xLine)
