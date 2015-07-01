@@ -5,7 +5,7 @@
 class LogisticMapGenerator
 {
 public:
-    LogisticMapGenerator() : _data(NULL), _r(3.6), _sampleCount(1000), _x0(0.5) {}
+    LogisticMapGenerator() : _data(NULL), _r(3.5), _sampleCount(1000), _x0(0.5) {}
     LogisticMapGenerator(QList<qreal>* data, qreal r,qreal x0, int sampleCount) :
         _data(data), _r(r), _x0(x0), _sampleCount(sampleCount) {}
     ~LogisticMapGenerator() {}

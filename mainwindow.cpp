@@ -7,8 +7,8 @@
 #include "clorentzgenerator.h"
 #include "c3ddataseries.h"
 
-#include <mgl2/qmathgl.h>
-#include <mgl2/plot.h>
+//#include <mgl2/qmathgl.h>
+//#include <mgl2/plot.h>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),

@@ -3,6 +3,7 @@
 
 void LogisticMapGenerator::Solve()
 {    
+    _data->clear();
     _data->append(_x0);
 
     for(int i=1; i<_sampleCount; ++i)
