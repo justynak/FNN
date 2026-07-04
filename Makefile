@@ -11,26 +11,10 @@ TARGET   := $(BUILD)/FNN
 
 SOURCES  := main.cpp \
             mainwindow.cpp \
-            icdata.cpp \
-            ctimeseries.cpp \
-            cfnndata.cpp \
-            cmutualinformationdata.cpp \
-            cembeddedsignaldata.cpp \
-            icsolution.cpp \
-            icsolver.cpp \
-            icnotifier.cpp \
-            icalgorithm.cpp \
-            icdatagenerator.cpp \
-            cfnnsolver.cpp \
-            cmutualinformationsolver.cpp \
-            cembeddingsolver.cpp \
-            chenongenerator.cpp \
-            clorentzgenerator.cpp \
-            cikedagenerator.cpp \
-            c3ddataseries.cpp \
-            c2ddataseries.cpp \
-            icmultipledimdataseries.cpp \
             qcustomplot.cpp
+
+CORE_HEADERS := core/point.h core/henon.h core/ikeda.h core/lorenz.h \
+                core/mutual_information.h core/embedding.h core/fnn.h
 
 MOC_HEADERS := mainwindow.h qcustomplot.h
 FORMS       := mainwindow.ui
@@ -80,6 +64,15 @@ clean:
 run: $(TARGET)
 	./$(TARGET)
 
+# Unit tests for the math core (core/ has no Qt dependency)
+TEST_BIN := $(BUILD)/run_tests
+
+test: $(TEST_BIN)
+	./$(TEST_BIN)
+
+$(TEST_BIN): tests/test_main.cpp $(CORE_HEADERS) | $(BUILD)
+	$(CXX) -std=c++17 -O2 -Wall -Wextra -I. $< -o $@
+
 -include $(DEPS)
 
-.PHONY: all clean run
+.PHONY: all clean run test

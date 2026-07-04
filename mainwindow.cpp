@@ -1,14 +1,39 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include "qcustomplot.h"
-#include "cikedagenerator.h"
-#include "chenongenerator.h"
-#include "clorentzgenerator.h"
-#include "c3ddataseries.h"
+#include <vector>
 
-//#include <mgl2/qmathgl.h>
-//#include <mgl2/plot.h>
+#include "qcustomplot.h"
+#include "core/henon.h"
+#include "core/ikeda.h"
+#include "core/lorenz.h"
+
+namespace {
+
+// Shows an orbit as an x-vs-y scatter plot. Works for any point type with
+// .x/.y members, so 3D orbits are projected onto the x-y plane.
+template <class Point>
+void plotScatter(QCustomPlot *plot, const std::vector<Point> &orbit)
+{
+    QList<double> x, y;
+    x.reserve(int(orbit.size()));
+    y.reserve(int(orbit.size()));
+    for (const Point &p : orbit) {
+        x.append(p.x);
+        y.append(p.y);
+    }
+
+    plot->addGraph();
+    plot->graph(0)->setData(x, y);
+    plot->xAxis->setLabel("x");
+    plot->yAxis->setLabel("y");
+    plot->graph(0)->setLineStyle(QCPGraph::lsNone);
+    plot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 1));
+    plot->graph(0)->rescaleAxes();
+    plot->replot();
+}
+
+} // namespace
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -16,74 +41,12 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    CIkedaGenerator* gen = new CIkedaGenerator(1.0, 0.9, 0.1, 8.0, QVector3D(0.5, 0.8, 0), 100000);
-    gen->Solve();
-
-    qDebug() << "Done\n";
-
-    data = gen->GetData();
-    QList<double>x = data->GetXLine();
-    QList<double>y = data->GetYLine();
-    QList<double>z = data->GetZLine();
-
-    ui->plot->addGraph();
-    ui->plot->graph(0)->setData(x, y);
-
-    ui->plot->xAxis->setLabel("x");
-    ui->plot->yAxis->setLabel("y");
-
-    ui->plot->graph(0)->setLineStyle(QCPGraph::lsNone);
-    ui->plot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 1));
-    ui->plot->graph(0)->rescaleAxes();
-
-
-
-    CHenonGenerator* genH = new CHenonGenerator();
-    genH->Solve();
-    dataH = genH->GetData();
-    QList<double>xH = dataH->GetXLine();
-    QList<double>yH = dataH->GetYLine();
-
-    ui->plot2->addGraph();
-    ui->plot2->graph(0)->setData(xH, yH);
-
-    ui->plot2->xAxis->setLabel("x");
-    ui->plot2->yAxis->setLabel("y");
-
-    ui->plot2->graph(0)->setLineStyle(QCPGraph::lsNone);
-    ui->plot2->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 1));
-    ui->plot2->graph(0)->rescaleAxes();
-
-    CLorentzGenerator *genL = new CLorentzGenerator();
-    genL->Solve();
-    dataL = genL->GetData();
-    QList<double>xL = dataL->GetXLine();
-    QList<double>yL = dataL->GetYLine();
-
-    ui->plot3->addGraph();
-    ui->plot3->graph(0)->setData(xL, yL);
-
-    ui->plot3->xAxis->setLabel("x");
-    ui->plot3->yAxis->setLabel("y");
-
-    ui->plot3->graph(0)->setLineStyle(QCPGraph::lsNone);
-    ui->plot3->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 1));
-    ui->plot3->graph(0)->rescaleAxes();
-
-    ui->plot->replot();
-    ui->plot2->replot();
-    ui->plot3->replot();
-
-    delete genH;
-    delete genL;
-    delete gen;
+    plotScatter(ui->plot, fnn::ikeda_orbit({0.5, 0.8}, 100000));
+    plotScatter(ui->plot2, fnn::henon_orbit({1.2, 1.3}, 10000));
+    plotScatter(ui->plot3, fnn::lorenz_orbit({1.2, 1.3, 1.6}, 0.005, 100000));
 }
-
 
 MainWindow::~MainWindow()
 {
     delete ui;
-    delete data;
-    delete dataH;
-    delete dataL;
 }

@@ -11,6 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The math core has no Qt dependency, so tests run before Qt is installed
+      - name: Run unit tests
+        run: make test
+
       - name: Install Qt 5
         run: |
           sudo apt-get update
