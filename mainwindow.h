@@ -15,7 +15,13 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     virtual ~MainWindow();
 
+    // Renders every tab to <dir>/tab<N>.png; used for headless verification.
+    bool saveScreenshots(const QString &dir);
+
 private:
+    void setupAttractorsTab();
+    void setupTakensTab();
+
     Ui::MainWindow *ui;
 };
 

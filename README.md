@@ -71,9 +71,17 @@ lands at τ·dt ≈ 0.16, matching the published value.
 
 ### Main FNN app
 
-On startup, `MainWindow` generates the three systems via `core/` and shows each as an
-x-vs-y scatter plot in its own QCustomPlot panel — the well-known strange attractors
-(Ikeda 100k points, Hénon 10k, Lorenz 100k at dt=0.005).
+Two tabs:
+
+- **Attractors** — the three systems generated via `core/`, each as an x-vs-y
+  scatter plot (Ikeda 100k points, Hénon 10k, Lorenz 100k at dt=0.005).
+- **Takens reconstruction** — the full pipeline run on the Lorenz x-coordinate
+  alone: the true attractor, the AMI curve with the chosen τ marked, the FNN
+  curve with the chosen m marked, and the attractor reconstructed from the
+  scalar signal via delay embedding.
+
+`./build/FNN --screenshot <dir>` renders every tab to PNG and exits (headless
+verification).
 
 ### `MutualInformation/` subproject
 
@@ -102,7 +110,6 @@ collapses at m = 3, the known answer for the Lorenz attractor.
 
 ## What's next (planned)
 
-- Wire the pipeline into the GUI (embedded-attractor view; AMI/FNN curve plots).
 - Migrate `MutualInformation/` onto `core/` and implement its AMI display.
 
 ## Building and testing
