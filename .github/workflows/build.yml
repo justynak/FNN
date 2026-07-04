@@ -1,0 +1,23 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt 5
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qtbase5-dev libqt5opengl5-dev
+
+      - name: Build FNN
+        run: make -j"$(nproc)"
+
+      - name: Build MutualInformation
+        run: make -C MutualInformation -j"$(nproc)"
