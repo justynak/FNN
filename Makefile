@@ -15,7 +15,7 @@ SOURCES  := main.cpp \
 
 CORE_HEADERS := core/point.h core/integrate.h core/henon.h core/ikeda.h \
                 core/logistic.h core/lorenz.h core/mutual_information.h \
-                core/embedding.h core/fnn.h
+                core/embedding.h core/fnn.h core/correlation_dimension.h
 
 MOC_HEADERS := mainwindow.h qcustomplot.h
 FORMS       := mainwindow.ui

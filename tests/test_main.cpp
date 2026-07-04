@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <random>
 
+#include "core/correlation_dimension.h"
 #include "core/embedding.h"
 #include "core/fnn.h"
 #include "core/henon.h"
@@ -513,6 +514,70 @@ static void test_full_recipe_on_lorenz()
     CHECK(curve[2] < 0.05);
 }
 
+// ------------------------------------------------- Correlation dimension
+
+static void test_correlation_integral_exact()
+{
+    // Hand-computed: pair distances are 0.5, 2.0, 1.5, so with radii
+    // {0.6, 1.6, 2.5} the integrals are 1/3, 2/3, 3/3 (d < r, strict).
+    const std::vector<std::vector<double>> pts{{0.0}, {0.5}, {2.0}};
+    const auto c = correlation_integrals(pts, {0.6, 1.6, 2.5});
+    CHECK_NEAR(c[0], 1.0 / 3.0, 1e-15);
+    CHECK_NEAR(c[1], 2.0 / 3.0, 1e-15);
+    CHECK_NEAR(c[2], 1.0, 1e-15);
+
+    // Theiler window 1 leaves only the pair (0, 2.0), distance 2.
+    const auto ct = correlation_integrals(pts, {1.0}, 1);
+    CHECK(ct[0] == 0.0);
+}
+
+static void test_correlation_dimension_known_sets()
+{
+    // Point sets with known dimension. Uniform sets use a fixed seed and
+    // tolerance-band assertions; the mild downward bias on the line/square
+    // (~ 1 - r/2L) is edge effect, not error.
+    std::mt19937 gen(42);
+    std::uniform_real_distribution<double> u(0.0, 1.0);
+    std::vector<std::vector<double>> line, square, circle;
+    for (int i = 0; i < 2000; ++i) {
+        line.push_back({u(gen)});
+        square.push_back({u(gen), u(gen)});
+        const double th = 2.0 * M_PI * 0.3819660113 * i; // golden angle
+        circle.push_back({std::cos(th), std::sin(th)});
+    }
+    const double d_line = correlation_dimension(line, 0.01, 0.1);
+    const double d_square = correlation_dimension(square, 0.01, 0.1);
+    const double d_circle = correlation_dimension(circle, 0.02, 0.3);
+    CHECK(d_line > 0.93 && d_line < 1.03);     // exact: 1
+    CHECK(d_square > 1.90 && d_square < 2.05); // exact: 2
+    CHECK(d_circle > 0.97 && d_circle < 1.08); // exact: 1 (deterministic set)
+}
+
+static void test_correlation_dimension_henon()
+{
+    // End-to-end from the scalar series: embed x with (m=2, tau=1) and
+    // recover the published attractor dimension D2 ~ 1.22.
+    const auto emb = delay_embedding(henon_x(4000), 2, 1);
+    const double d2 = correlation_dimension(emb, 0.01, 0.2, 12, 2);
+    CHECK(d2 > 1.1 && d2 < 1.3); // measured 1.21
+}
+
+static void test_correlation_dimension_lorenz_full_pipeline()
+{
+    // The complete recipe ends here: scalar signal -> AMI picks tau ->
+    // embed at m=3 -> D2 ~ 2.06 (published). The scaling region tops out
+    // at ~5% of the attractor extent; larger radii sample the two-lobe
+    // macrostructure and depress the slope (measured 1.83 at r_max=6).
+    std::vector<double> x;
+    const auto orbit = lorenz_orbit({1.2, 1.3, 1.6}, 0.01, 8500);
+    for (size_t i = 500; i < orbit.size(); ++i)
+        x.push_back(orbit[i].x);
+    const int tau = first_local_minimum(ami_curve(x, 40, 16));
+    const auto emb = delay_embedding(x, 3, tau);
+    const double d2 = correlation_dimension(emb, 0.3, 2.0, 12, 2 * tau);
+    CHECK(d2 > 1.9 && d2 < 2.2); // measured 2.07
+}
+
 int main()
 {
     test_henon_fixed_points();
@@ -546,6 +611,10 @@ int main()
     test_fnn_noise_never_embeds();
     test_fnn_degenerate_inputs();
     test_full_recipe_on_lorenz();
+    test_correlation_integral_exact();
+    test_correlation_dimension_known_sets();
+    test_correlation_dimension_henon();
+    test_correlation_dimension_lorenz_full_pipeline();
 
     std::printf("%d checks, %d failures\n", g_checks, g_failures);
     return g_failures == 0 ? 0 : 1;

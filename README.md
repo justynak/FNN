@@ -39,6 +39,9 @@ the single-step functions are what the unit tests pin down:
   (`delay_embedding`, `delay_vector_count`)
 - `core/fnn.h` — False Nearest Neighbors (Kennel–Brown–Abarbanel) for choosing
   the embedding dimension m (`false_neighbor_fraction`, `fnn_curve`)
+- `core/correlation_dimension.h` — Grassberger–Procaccia correlation integral
+  and D₂ estimate (`correlation_integrals`, `correlation_dimension`); the
+  scaling region [r_min, r_max] is the caller's explicit choice
 
 Default parameters are the classic chaotic ones (Hénon a=1.4 b=0.3; Lorenz σ=10,
 ρ=28, β=8/3; Ikeda as plotted by the app).
@@ -102,10 +105,19 @@ stays high at every m). An end-to-end test runs the whole recipe on a Lorenz
 x-trajectory: AMI picks τ ≈ 16 samples (dt=0.01, the literature value) and FNN
 collapses at m = 3, the known answer for the Lorenz attractor.
 
-## What's next (planned)
+## Pipeline validation
 
-- Correlation dimension (Grassberger–Procaccia) as an end-to-end validation of
-  the embedding pipeline (Hénon D₂ ≈ 1.22, Lorenz D₂ ≈ 2.06).
+The correlation dimension closes the loop end-to-end: from the scalar Hénon
+x-series, embedding at (m=2, τ=1) recovers D₂ ≈ 1.21 (published: 1.22), and from
+the scalar Lorenz x-series the full recipe — AMI picks τ, embed at m=3 — recovers
+D₂ ≈ 2.07 (published: 2.06). The D₂ estimator itself is validated on point sets
+of known dimension (uniform segment, uniform square, points on a circle) and an
+exactly hand-computed correlation integral.
+
+## Ideas (not planned)
+
+- Automatic scaling-region selection for D₂ — needs its own oracle first.
+- Expose the pipeline for user-supplied signals (load a CSV, get τ, m, D₂).
 
 ## Building and testing
 
