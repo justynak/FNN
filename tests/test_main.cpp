@@ -1,0 +1,395 @@
+// Unit tests for the Qt-free math core. No framework dependency: CHECK
+// macros count failures and main() returns non-zero if any test failed.
+//
+// Oracles (chosen because they survive floating-point reordering, unlike
+// exact trajectory values of a chaotic system):
+//   - analytic fixed points of the single-step map / ODE right-hand side
+//   - provable orbit bounds (trapping regions)
+//   - exact analytic inverse of the Hénon map (round-trip identity)
+//   - orbit/step consistency and determinism
+
+#include <cmath>
+#include <cstdio>
+#include <random>
+
+#include "core/embedding.h"
+#include "core/fnn.h"
+#include "core/henon.h"
+#include "core/ikeda.h"
+#include "core/lorenz.h"
+#include "core/mutual_information.h"
+
+static int g_checks = 0;
+static int g_failures = 0;
+
+#define CHECK(cond)                                                          \
+    do {                                                                     \
+        ++g_checks;                                                          \
+        if (!(cond)) {                                                       \
+            ++g_failures;                                                    \
+            std::printf("FAIL %s:%d  %s\n", __FILE__, __LINE__, #cond);      \
+        }                                                                    \
+    } while (0)
+
+#define CHECK_NEAR(a, b, tol)                                                \
+    do {                                                                     \
+        ++g_checks;                                                          \
+        const double _a = (a), _b = (b);                                     \
+        if (!(std::fabs(_a - _b) <= (tol))) {                                \
+            ++g_failures;                                                    \
+            std::printf("FAIL %s:%d  %s == %g, expected %g (tol %g)\n",      \
+                        __FILE__, __LINE__, #a, _a, _b, (double)(tol));      \
+        }                                                                    \
+    } while (0)
+
+using namespace fnn;
+
+// ---------------------------------------------------------------- Hénon
+
+static void test_henon_fixed_points()
+{
+    // Fixed points solve a*x^2 + (1-b)*x - 1 = 0, y = b*x. Both are
+    // saddles, so we assert one application of the map, not orbit
+    // invariance: rounding errors would be amplified out of the point.
+    const HenonParams prm;
+    const double disc = std::sqrt((1.0 - prm.b) * (1.0 - prm.b) + 4.0 * prm.a);
+    for (const double sign : {1.0, -1.0}) {
+        const double x = (-(1.0 - prm.b) + sign * disc) / (2.0 * prm.a);
+        const Point2 fp{x, prm.b * x};
+        const Point2 next = henon_step(fp, prm);
+        CHECK_NEAR(next.x, fp.x, 1e-12);
+        CHECK_NEAR(next.y, fp.y, 1e-12);
+    }
+}
+
+static void test_henon_inverse_round_trip()
+{
+    // The inverse is analytic, so inverse(step(p)) must reproduce p to
+    // near machine precision along the whole orbit.
+    const HenonParams prm;
+    Point2 p{1.2, 1.3};
+    for (int i = 0; i < 1000; ++i) {
+        const Point2 next = henon_step(p, prm);
+        const Point2 back = henon_inverse_step(next, prm);
+        CHECK_NEAR(back.x, p.x, 1e-12);
+        CHECK_NEAR(back.y, p.y, 1e-9);
+        p = next;
+    }
+}
+
+static void test_henon_orbit_bounded()
+{
+    const auto orbit = henon_orbit({1.2, 1.3}, 10000);
+    CHECK(orbit.size() == 10000);
+    bool bounded = true;
+    for (const Point2 &p : orbit)
+        bounded = bounded && std::fabs(p.x) < 2.0 && std::fabs(p.y) < 1.0;
+    CHECK(bounded);
+}
+
+static void test_henon_orbit_step_consistency()
+{
+    // Guards the orbit loop itself (off-by-one, state reuse): each entry
+    // must be exactly one step from the previous one, starting at init.
+    const Point2 init{1.2, 1.3};
+    const auto orbit = henon_orbit(init, 100);
+    Point2 p = init;
+    bool consistent = true;
+    for (const Point2 &q : orbit) {
+        p = henon_step(p);
+        consistent = consistent && p.x == q.x && p.y == q.y;
+    }
+    CHECK(consistent);
+}
+
+// ---------------------------------------------------------------- Ikeda
+
+static void test_ikeda_phase()
+{
+    // At the origin the formula collapses to c - d.
+    const IkedaParams prm;
+    CHECK_NEAR(ikeda_phase({0.0, 0.0}, prm), prm.c - prm.d, 1e-15);
+}
+
+static void test_ikeda_trapping_ball()
+{
+    // The map is a norm-preserving rotation scaled by b plus a shift by a,
+    // so r' <= a + b*r: any orbit starting with r < a/(1-b) stays there.
+    const IkedaParams prm;
+    const double radius = prm.a / (1.0 - prm.b);
+    const auto orbit = ikeda_orbit({0.5, 0.8}, 10000, prm);
+    CHECK(orbit.size() == 10000);
+    bool inside = true;
+    for (const Point2 &p : orbit)
+        inside = inside && std::hypot(p.x, p.y) < radius;
+    CHECK(inside);
+}
+
+static void test_ikeda_orbit_step_consistency()
+{
+    const Point2 init{0.5, 0.8};
+    const auto orbit = ikeda_orbit(init, 100);
+    Point2 p = init;
+    bool consistent = true;
+    for (const Point2 &q : orbit) {
+        p = ikeda_step(p);
+        consistent = consistent && p.x == q.x && p.y == q.y;
+    }
+    CHECK(consistent);
+}
+
+// --------------------------------------------------------------- Lorenz
+
+static void test_lorenz_fixed_points()
+{
+    // Tests the right-hand side, not the integrator: the derivative must
+    // vanish at the origin and at C± = (±s, ±s, rho-1), s = sqrt(beta*(rho-1)).
+    const LorenzParams prm;
+    const Point3 at_origin = lorenz_deriv({0.0, 0.0, 0.0}, prm);
+    CHECK(at_origin.x == 0.0 && at_origin.y == 0.0 && at_origin.z == 0.0);
+
+    const double s = std::sqrt(prm.beta * (prm.rho - 1.0));
+    for (const double sign : {1.0, -1.0}) {
+        const Point3 d = lorenz_deriv({sign * s, sign * s, prm.rho - 1.0}, prm);
+        CHECK_NEAR(d.x, 0.0, 1e-12);
+        CHECK_NEAR(d.y, 0.0, 1e-12);
+        CHECK_NEAR(d.z, 0.0, 1e-12);
+    }
+}
+
+static void test_lorenz_euler_step()
+{
+    // One Euler step must be exactly p + dt * deriv(p).
+    const LorenzParams prm;
+    const Point3 p{1.2, 1.3, 1.6};
+    const double dt = 0.005;
+    const Point3 d = lorenz_deriv(p, prm);
+    const Point3 next = lorenz_euler_step(p, dt, prm);
+    CHECK(next.x == p.x + d.x * dt);
+    CHECK(next.y == p.y + d.y * dt);
+    CHECK(next.z == p.z + d.z * dt);
+}
+
+static void test_lorenz_orbit_bounded()
+{
+    const auto orbit = lorenz_orbit({1.2, 1.3, 1.6}, 0.005, 100000);
+    CHECK(orbit.size() == 100000);
+    bool bounded = true;
+    for (const Point3 &p : orbit)
+        bounded = bounded &&
+                  std::fabs(p.x) < 30.0 && std::fabs(p.y) < 40.0 &&
+                  p.z > -5.0 && p.z < 60.0;
+    CHECK(bounded);
+}
+
+// --------------------------------------------- Average mutual information
+
+static std::vector<double> tile(const std::vector<double> &pattern, int copies,
+                                int extra = 0)
+{
+    std::vector<double> signal;
+    signal.reserve(pattern.size() * copies + extra);
+    for (int c = 0; c < copies; ++c)
+        signal.insert(signal.end(), pattern.begin(), pattern.end());
+    for (int i = 0; i < extra; ++i)
+        signal.push_back(pattern[i % pattern.size()]);
+    return signal;
+}
+
+static std::vector<double> henon_x(int count)
+{
+    std::vector<double> x;
+    x.reserve(count);
+    for (const Point2 &p : henon_orbit({1.2, 1.3}, count))
+        x.push_back(p.x);
+    return x;
+}
+
+static void test_ami_debruijn_zero_at_lag1()
+{
+    // De Bruijn pattern 0,0,1,1 tiled, one extra element so the 4m pairs at
+    // lag 1 hit (0,0),(0,1),(1,1),(1,0) exactly m times each: the joint
+    // distribution factorizes exactly and AMI is 0 with no estimator bias.
+    const auto signal = tile({0.0, 0.0, 1.0, 1.0}, 250, 1);
+    CHECK_NEAR(average_mutual_information(signal, 1, 2), 0.0, 1e-12);
+}
+
+static void test_ami_periodic_returns_to_entropy()
+{
+    // At lag 0 and at the full period every sample pairs with itself, so
+    // AMI equals the marginal entropy: exactly 1 bit for a balanced binary
+    // signal.
+    const auto signal = tile({0.0, 0.0, 1.0, 1.0}, 250, 4);
+    CHECK_NEAR(average_mutual_information(signal, 0, 2), 1.0, 1e-12);
+    CHECK_NEAR(average_mutual_information(signal, 4, 2), 1.0, 1e-12);
+}
+
+static void test_ami_lag0_equals_entropy()
+{
+    // On real (Hénon) data, AMI at lag 0 must reproduce the Shannon entropy
+    // of the histogram, computed independently here.
+    const int bins = 16;
+    const auto signal = henon_x(5000);
+
+    const double lo = *std::min_element(signal.begin(), signal.end());
+    const double hi = *std::max_element(signal.begin(), signal.end());
+    std::vector<long> hist(bins, 0);
+    for (const double v : signal) {
+        const int i = int((v - lo) / (hi - lo) * bins);
+        ++hist[i < bins ? i : bins - 1];
+    }
+    double entropy = 0.0;
+    for (const long c : hist)
+        if (c > 0) {
+            const double p = double(c) / signal.size();
+            entropy -= p * std::log2(p);
+        }
+
+    CHECK_NEAR(average_mutual_information(signal, 0, bins), entropy, 1e-12);
+}
+
+static void test_ami_bounds_on_henon()
+{
+    // For any input: 0 <= I(tau) <= I(0).
+    const auto signal = henon_x(5000);
+    const auto curve = ami_curve(signal, 20, 16);
+    bool in_bounds = true;
+    for (const double v : curve)
+        in_bounds = in_bounds && v >= -1e-12 && v <= curve[0] + 1e-12;
+    CHECK(curve.size() == 21);
+    CHECK(in_bounds);
+}
+
+static void test_ami_degenerate_inputs()
+{
+    const std::vector<double> constant(100, 1.0);
+    CHECK(average_mutual_information(constant, 0, 16) == 0.0);
+    CHECK(average_mutual_information(constant, 5, 16) == 0.0);
+    CHECK(average_mutual_information({}, 1, 16) == 0.0);
+    CHECK(average_mutual_information({1.0, 2.0}, 5, 16) == 0.0);
+}
+
+static void test_first_local_minimum()
+{
+    CHECK(first_local_minimum({3.0, 2.0, 1.0, 2.0, 3.0}) == 2);
+    CHECK(first_local_minimum({5.0, 4.0, 3.0, 2.0, 1.0}) == -1);
+    CHECK(first_local_minimum({1.0, 2.0, 1.0, 2.0, 1.0}) == 2);
+    CHECK(first_local_minimum({}) == -1);
+}
+
+// -------------------------------- Embedding and false nearest neighbors
+
+static void test_delay_embedding_indexing()
+{
+    const std::vector<double> s{0, 1, 2, 3, 4, 5};
+    const auto emb = delay_embedding(s, 2, 2);
+    CHECK(emb.size() == 4);
+    CHECK(emb[0][0] == 0.0 && emb[0][1] == 2.0);
+    CHECK(emb[3][0] == 3.0 && emb[3][1] == 5.0);
+
+    const auto identity = delay_embedding(s, 1, 7); // lag irrelevant at dim 1
+    CHECK(identity.size() == 6 && identity[5][0] == 5.0);
+
+    CHECK(delay_embedding({1.0, 2.0}, 3, 5).empty());
+    CHECK(delay_vector_count(100, 3, 10) == 80);
+}
+
+static void test_fnn_sine_embeds_at_two()
+{
+    // A sine wave is a limit cycle: 1D delay coordinates fold opposite
+    // branches onto each other (false neighbors), 2D unfolds them onto a
+    // closed curve. Period of 50.7 samples avoids exact duplicate points.
+    std::vector<double> s;
+    for (int t = 0; t < 2000; ++t)
+        s.push_back(std::sin(2.0 * M_PI * t / 50.7));
+    // At dim 1 only ~15% of points are false: the signal spans ~39 periods,
+    // so most nearest neighbors are phase-aliased copies from other periods
+    // with identical futures — genuinely true neighbors. The discriminating
+    // fact is the drop to ~0 at dim 2.
+    const int lag = 13; // ~ quarter period
+    CHECK(false_neighbor_fraction(s, 1, lag) > 0.1);
+    CHECK(false_neighbor_fraction(s, 2, lag) < 0.01);
+}
+
+static void test_fnn_henon_embeds_at_two()
+{
+    // x_{t+2} = 1 - a*x_{t+1}^2 + b*x_t: the next value is an exact
+    // function of the last two, so the fraction must collapse at dim 2
+    // and stay collapsed.
+    const auto s = henon_x(2000);
+    const auto curve = fnn_curve(s, 3, 1);
+    CHECK(curve[0] > 0.2);
+    CHECK(curve[1] < 0.05);
+    CHECK(curve[2] < 0.05);
+}
+
+static void test_fnn_noise_never_embeds()
+{
+    // White noise has no finite embedding dimension; the algorithm must be
+    // able to say no. Fixed seed + inequality assertion keeps this
+    // deterministic and seed-robust. The "no" saturates rather than staying
+    // near 1: at high dim the ratio test cannot fire (neighbor distances get
+    // large), leaving the size test, which for uniform noise fires with
+    // probability (1 - a_tol*sd)^2 ~ 0.18 regardless of sample count. Still
+    // several times the <0.05 of a genuinely embedded signal.
+    std::mt19937 gen(42);
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    std::vector<double> s;
+    for (int t = 0; t < 2000; ++t)
+        s.push_back(dist(gen));
+    for (const double fraction : fnn_curve(s, 5, 1))
+        CHECK(fraction > 0.15);
+}
+
+static void test_fnn_degenerate_inputs()
+{
+    CHECK(false_neighbor_fraction(std::vector<double>(100, 1.0), 2, 1) == 0.0);
+    CHECK(false_neighbor_fraction({1.0, 2.0}, 3, 5) == 0.0);
+    CHECK(false_neighbor_fraction({}, 1, 1) == 0.0);
+}
+
+static void test_full_recipe_on_lorenz()
+{
+    // The whole pipeline: AMI picks tau, FNN picks m; the Lorenz attractor
+    // must embed at m = 3.
+    std::vector<double> x;
+    const auto orbit = lorenz_orbit({1.2, 1.3, 1.6}, 0.01, 4500);
+    for (size_t i = 500; i < orbit.size(); ++i) // drop the transient
+        x.push_back(orbit[i].x);
+
+    const int tau = first_local_minimum(ami_curve(x, 40, 16));
+    CHECK(tau >= 8 && tau <= 30); // literature value ~16 samples at dt=0.01
+
+    const auto curve = fnn_curve(x, 3, tau);
+    CHECK(curve[0] > 0.2);
+    CHECK(curve[2] < 0.05);
+}
+
+int main()
+{
+    test_henon_fixed_points();
+    test_henon_inverse_round_trip();
+    test_henon_orbit_bounded();
+    test_henon_orbit_step_consistency();
+    test_ikeda_phase();
+    test_ikeda_trapping_ball();
+    test_ikeda_orbit_step_consistency();
+    test_lorenz_fixed_points();
+    test_lorenz_euler_step();
+    test_lorenz_orbit_bounded();
+    test_ami_debruijn_zero_at_lag1();
+    test_ami_periodic_returns_to_entropy();
+    test_ami_lag0_equals_entropy();
+    test_ami_bounds_on_henon();
+    test_ami_degenerate_inputs();
+    test_first_local_minimum();
+    test_delay_embedding_indexing();
+    test_fnn_sine_embeds_at_two();
+    test_fnn_henon_embeds_at_two();
+    test_fnn_noise_never_embeds();
+    test_fnn_degenerate_inputs();
+    test_full_recipe_on_lorenz();
+
+    std::printf("%d checks, %d failures\n", g_checks, g_failures);
+    return g_failures == 0 ? 0 : 1;
+}
