@@ -12,12 +12,11 @@ The data-generation and plotting parts are implemented; the analysis algorithms
 
 | Path | What it is |
 |---|---|
-| `core/` | Qt-free math core: the chaotic-system generators, header-only |
+| `core/` | Qt-free math core: generators and analysis algorithms, header-only |
 | `tests/` | Unit tests for `core/` (no framework, no Qt — plain C++) |
-| `main.cpp`, `mainwindow.*`, `mainwindow.ui` | Qt shell of the main FNN app: generates the systems via `core/` and plots them |
-| `MutualInformation/` | A separate, standalone Qt app (own Makefile / `.pro`) |
-| `qcustomplot.cpp/.h` | Third-party plotting library ([QCustomPlot](https://www.qcustomplot.com/) 1.3.1), vendored in both apps |
-| `FNN.pro`, `MutualInformation/MutualInformation.pro` | Original QtCreator project files, kept for reference |
+| `main.cpp`, `mainwindow.*`, `mainwindow.ui` | Qt shell: generates the systems via `core/` and plots them |
+| `qcustomplot.cpp/.h` | Third-party plotting library ([QCustomPlot](https://www.qcustomplot.com/) 1.3.1), vendored |
+| `FNN.pro` | Original QtCreator project file, kept for reference |
 
 ## The math core (`core/`)
 
@@ -32,6 +31,7 @@ the single-step functions are what the unit tests pin down:
   RK4), generic over the system so their convergence order is testable
 - `core/lorenz.h` — Lorenz system, integrated with RK4
   (`lorenz_deriv`, `lorenz_euler_step`, `lorenz_rk4_step`, `lorenz_orbit`)
+- `core/logistic.h` — logistic map (`logistic_step`, `logistic_orbit`)
 - `core/mutual_information.h` — histogram-based average mutual information
   (Fraser & Swinney) for choosing the embedding delay τ
   (`average_mutual_information`, `ami_curve`, `first_local_minimum`)
@@ -67,14 +67,15 @@ the histogram), exact return to full entropy at the signal period, and the bound
 0 ≤ I(τ) ≤ I(0) on Hénon data. On a Lorenz x-trajectory the first AMI minimum
 lands at τ·dt ≈ 0.16, matching the published value.
 
-## The Qt apps
+## The Qt app
 
-### Main FNN app
-
-Two tabs:
+Three tabs:
 
 - **Attractors** — the three systems generated via `core/`, each as an x-vs-y
   scatter plot (Ikeda 100k points, Hénon 10k, Lorenz 100k at dt=0.005).
+- **Logistic map** — a logistic-map time series with a slider that changes the
+  parameter r live, showing the route from fixed point through period-doubling
+  into chaos as r → 4. (Formerly the standalone `MutualInformation/` app.)
 - **Takens reconstruction** — the full pipeline run on the Lorenz x-coordinate
   alone: the true attractor, the AMI curve with the chosen τ marked, the FNN
   curve with the chosen m marked, and the attractor reconstructed from the
@@ -82,13 +83,6 @@ Two tabs:
 
 `./build/FNN --screenshot <dir>` renders every tab to PNG and exits (headless
 verification).
-
-### `MutualInformation/` subproject
-
-A standalone app that generates a **logistic map** time series (`x' = r·x·(1−x)`) and
-plots it, with a slider that changes the parameter `r` live. Despite the project's
-name, its `MutualInformationSolver` class is empty; only the logistic-map demo works.
-*(Not yet migrated to `core/`.)*
 
 ## Analysis pipeline
 
@@ -110,7 +104,8 @@ collapses at m = 3, the known answer for the Lorenz attractor.
 
 ## What's next (planned)
 
-- Migrate `MutualInformation/` onto `core/` and implement its AMI display.
+- Correlation dimension (Grassberger–Procaccia) as an end-to-end validation of
+  the embedding pipeline (Hénon D₂ ≈ 1.22, Lorenz D₂ ≈ 2.06).
 
 ## Building and testing
 
@@ -125,13 +120,10 @@ Then:
 
 ```sh
 make test     # builds and runs the core unit tests (needs no Qt)
-make          # builds the main app → build/FNN
+make          # builds the app → build/FNN
 make run      # builds and launches it
-
-cd MutualInformation
-make run      # builds and launches build/MutualInformation
 ```
 
-`make clean` removes the `build/` directory. The original QtCreator project files
-are kept for reference; the project was originally developed with Qt 5.4.1 /
+`make clean` removes the `build/` directory. The original QtCreator project file
+is kept for reference; the project was originally developed with Qt 5.4.1 /
 MinGW 32-bit.

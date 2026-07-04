@@ -20,7 +20,9 @@ public:
 
 private:
     void setupAttractorsTab();
+    void setupLogisticTab();
     void setupTakensTab();
+    void updateLogisticPlot(int sliderValue);
 
     Ui::MainWindow *ui;
 };

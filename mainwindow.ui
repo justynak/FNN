@@ -36,6 +36,49 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="logisticTab">
+       <attribute name="title">
+        <string>Logistic map</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="logisticLayout">
+        <item>
+         <widget class="QCustomPlot" name="logisticPlot" native="true"/>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="logisticControls">
+          <item>
+           <widget class="QLabel" name="rValueLabel">
+            <property name="minimumSize">
+             <size>
+              <width>80</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>r = 3.50</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSlider" name="rSlider">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="minimum">
+             <number>0</number>
+            </property>
+            <property name="maximum">
+             <number>400</number>
+            </property>
+            <property name="value">
+             <number>350</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="takensTab">
        <attribute name="title">
         <string>Takens reconstruction</string>
