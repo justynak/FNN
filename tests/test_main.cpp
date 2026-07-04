@@ -277,6 +277,101 @@ static void test_first_local_minimum()
     CHECK(first_local_minimum({}) == -1);
 }
 
+// ---------------------------------------------------------- Integrators
+
+// dp/dt = (-x, -2y, -3z): closed-form solution (e^-t, e^-2t, e^-3t) from
+// (1,1,1), used to measure the *order* of each integrator. The order is the
+// oracle: exact trajectory values would depend on dt, but "halving dt at
+// fixed final time T shrinks the global error 2^order times" is analytic.
+// Two classic blunders this setup avoids: halving dt at fixed step count
+// (compares states at different times), and measuring on a chaotic system
+// over a long horizon (e^(lambda*T) growth swamps the dt^order scaling).
+static Point3 linear_deriv(Point3 p)
+{
+    return {-p.x, -2.0 * p.y, -3.0 * p.z};
+}
+
+template <class Stepper>
+static double linear_system_error(int steps, double T, Stepper step)
+{
+    const double dt = T / steps;
+    Point3 p{1.0, 1.0, 1.0};
+    for (int i = 0; i < steps; ++i)
+        p = step(p, dt);
+    const Point3 exact{std::exp(-T), std::exp(-2.0 * T), std::exp(-3.0 * T)};
+    return std::max({std::fabs(p.x - exact.x), std::fabs(p.y - exact.y),
+                     std::fabs(p.z - exact.z)});
+}
+
+static void test_rk4_is_fourth_order()
+{
+    const auto step = [](Point3 p, double dt) { return rk4_step(p, dt, linear_deriv); };
+    const double ratio = linear_system_error(32, 2.0, step) /
+                         linear_system_error(64, 2.0, step);
+    CHECK(ratio > 14.0 && ratio < 18.0); // 2^4 = 16
+}
+
+static void test_euler_is_first_order()
+{
+    // Same measurement on Euler must give 2^1: this validates the
+    // measurement itself, not just the new integrator.
+    const auto step = [](Point3 p, double dt) { return euler_step(p, dt, linear_deriv); };
+    const double ratio = linear_system_error(32, 2.0, step) /
+                         linear_system_error(64, 2.0, step);
+    CHECK(ratio > 1.8 && ratio < 2.3);
+}
+
+static Point3 lorenz_rk4_endpoint(int steps, double T)
+{
+    const double dt = T / steps;
+    Point3 p{1.2, 1.3, 1.6};
+    for (int i = 0; i < steps; ++i)
+        p = lorenz_rk4_step(p, dt);
+    return p;
+}
+
+static void test_rk4_lorenz_self_convergence()
+{
+    // Lorenz has no closed form; Richardson self-convergence over a short
+    // horizon (T=0.5, before chaotic divergence dominates) must still show
+    // the 2^4 ratio between successive dt-halvings.
+    const Point3 a = lorenz_rk4_endpoint(50, 0.5);
+    const Point3 b = lorenz_rk4_endpoint(100, 0.5);
+    const Point3 c = lorenz_rk4_endpoint(200, 0.5);
+    const double d1 = std::max({std::fabs(a.x - b.x), std::fabs(a.y - b.y),
+                                std::fabs(a.z - b.z)});
+    const double d2 = std::max({std::fabs(b.x - c.x), std::fabs(b.y - c.y),
+                                std::fabs(b.z - c.z)});
+    const double ratio = d1 / d2;
+    CHECK(ratio > 12.0 && ratio < 20.0);
+}
+
+static void test_rk4_lorenz_fixed_point()
+{
+    // The derivative vanishes at C+ at every RK4 stage, so the step must
+    // stay put (up to FP noise in computing C+ itself).
+    const LorenzParams prm;
+    const double s = std::sqrt(prm.beta * (prm.rho - 1.0));
+    const Point3 fp{s, s, prm.rho - 1.0};
+    const Point3 next = lorenz_rk4_step(fp, 0.01, prm);
+    CHECK_NEAR(next.x, fp.x, 1e-10);
+    CHECK_NEAR(next.y, fp.y, 1e-10);
+    CHECK_NEAR(next.z, fp.z, 1e-10);
+}
+
+static void test_lorenz_orbit_uses_rk4()
+{
+    const Point3 init{1.2, 1.3, 1.6};
+    const auto orbit = lorenz_orbit(init, 0.005, 100);
+    Point3 p = init;
+    bool consistent = true;
+    for (const Point3 &q : orbit) {
+        p = lorenz_rk4_step(p, 0.005);
+        consistent = consistent && p.x == q.x && p.y == q.y && p.z == q.z;
+    }
+    CHECK(consistent);
+}
+
 // -------------------------------- Embedding and false nearest neighbors
 
 static void test_delay_embedding_indexing()
@@ -377,6 +472,11 @@ int main()
     test_lorenz_fixed_points();
     test_lorenz_euler_step();
     test_lorenz_orbit_bounded();
+    test_rk4_is_fourth_order();
+    test_euler_is_first_order();
+    test_rk4_lorenz_self_convergence();
+    test_rk4_lorenz_fixed_point();
+    test_lorenz_orbit_uses_rk4();
     test_ami_debruijn_zero_at_lag1();
     test_ami_periodic_returns_to_entropy();
     test_ami_lag0_equals_entropy();

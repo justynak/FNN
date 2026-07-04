@@ -13,8 +13,9 @@ SOURCES  := main.cpp \
             mainwindow.cpp \
             qcustomplot.cpp
 
-CORE_HEADERS := core/point.h core/henon.h core/ikeda.h core/lorenz.h \
-                core/mutual_information.h core/embedding.h core/fnn.h
+CORE_HEADERS := core/point.h core/integrate.h core/henon.h core/ikeda.h \
+                core/lorenz.h core/mutual_information.h core/embedding.h \
+                core/fnn.h
 
 MOC_HEADERS := mainwindow.h qcustomplot.h
 FORMS       := mainwindow.ui

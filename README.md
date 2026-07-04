@@ -28,8 +28,10 @@ the single-step functions are what the unit tests pin down:
 - `core/ikeda.h` — Ikeda map (`ikeda_phase`, `ikeda_step`, `ikeda_orbit`)
 - `core/henon.h` — Hénon map, including its analytic inverse
   (`henon_step`, `henon_inverse_step`, `henon_orbit`)
-- `core/lorenz.h` — Lorenz system, forward-Euler integration
-  (`lorenz_deriv`, `lorenz_euler_step`, `lorenz_orbit`)
+- `core/integrate.h` — fixed-step ODE integrators (forward Euler and classical
+  RK4), generic over the system so their convergence order is testable
+- `core/lorenz.h` — Lorenz system, integrated with RK4
+  (`lorenz_deriv`, `lorenz_euler_step`, `lorenz_rk4_step`, `lorenz_orbit`)
 - `core/mutual_information.h` — histogram-based average mutual information
   (Fraser & Swinney) for choosing the embedding delay τ
   (`average_mutual_information`, `ami_curve`, `first_local_minimum`)
@@ -52,6 +54,10 @@ dependence amplifies any change in floating-point evaluation order. The tests in
 - **provable orbit bounds** — e.g. the Ikeda map is a rotation scaled by b plus a
   shift by a, so every orbit is trapped in the ball of radius a/(1−b);
 - **exact inverse round-trip** for the Hénon map (analytically invertible for b≠0);
+- **convergence order** for the integrators: at fixed final time, halving dt must
+  shrink the global error 16× for RK4 and 2× for Euler (measured against a linear
+  system with closed-form solution, plus Richardson self-convergence on Lorenz
+  over a short horizon);
 - orbit/step consistency and determinism.
 
 The AMI estimator is tested against constructed inputs with exact answers rather
@@ -96,8 +102,6 @@ collapses at m = 3, the known answer for the Lorenz attractor.
 
 ## What's next (planned)
 
-- Replace forward Euler with RK4 before using Lorenz trajectories for quantitative
-  work — integration error inflates the apparent attractor dimension.
 - Wire the pipeline into the GUI (embedded-attractor view; AMI/FNN curve plots).
 - Migrate `MutualInformation/` onto `core/` and implement its AMI display.
 
