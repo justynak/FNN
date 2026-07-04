@@ -16,6 +16,7 @@
 #include "core/fnn.h"
 #include "core/henon.h"
 #include "core/ikeda.h"
+#include "core/logistic.h"
 #include "core/lorenz.h"
 #include "core/mutual_information.h"
 
@@ -277,6 +278,58 @@ static void test_first_local_minimum()
     CHECK(first_local_minimum({}) == -1);
 }
 
+// ------------------------------------------------------------- Logistic
+
+static void test_logistic_fixed_point()
+{
+    // The nonzero fixed point x* = 1 - 1/r is unstable for r > 3, so this
+    // asserts a single map application, not orbit invariance.
+    const double r = 3.5;
+    const double fp = 1.0 - 1.0 / r;
+    CHECK_NEAR(logistic_step(fp, r), fp, 1e-12);
+}
+
+static void test_logistic_period_two_cycle()
+{
+    // For r = 3.2 the attracting 2-cycle is analytic:
+    // x± = (r+1 ± sqrt((r+1)(r-3))) / (2r). One step maps each onto the
+    // other, and a generic orbit must converge onto the cycle.
+    const double r = 3.2;
+    const double disc = std::sqrt((r + 1.0) * (r - 3.0));
+    const double hi = (r + 1.0 + disc) / (2.0 * r);
+    const double lo = (r + 1.0 - disc) / (2.0 * r);
+    CHECK_NEAR(logistic_step(hi, r), lo, 1e-12);
+    CHECK_NEAR(logistic_step(lo, r), hi, 1e-12);
+
+    const auto orbit = logistic_orbit(0.5, r, 1000);
+    bool on_cycle = true;
+    for (size_t i = 500; i < orbit.size(); ++i)
+        on_cycle = on_cycle && (std::fabs(orbit[i] - hi) < 1e-6 ||
+                                std::fabs(orbit[i] - lo) < 1e-6);
+    CHECK(on_cycle);
+}
+
+static void test_logistic_unit_interval_invariant()
+{
+    // r = 4 maps [0,1] onto itself (fully chaotic regime).
+    bool inside = true;
+    for (const double x : logistic_orbit(0.3, 4.0, 10000))
+        inside = inside && x >= 0.0 && x <= 1.0;
+    CHECK(inside);
+}
+
+static void test_logistic_orbit_step_consistency()
+{
+    const auto orbit = logistic_orbit(0.5, 3.7, 100);
+    double x = 0.5;
+    bool consistent = true;
+    for (const double q : orbit) {
+        x = logistic_step(x, 3.7);
+        consistent = consistent && x == q;
+    }
+    CHECK(consistent);
+}
+
 // ---------------------------------------------------------- Integrators
 
 // dp/dt = (-x, -2y, -3z): closed-form solution (e^-t, e^-2t, e^-3t) from
@@ -469,6 +522,10 @@ int main()
     test_ikeda_phase();
     test_ikeda_trapping_ball();
     test_ikeda_orbit_step_consistency();
+    test_logistic_fixed_point();
+    test_logistic_period_two_cycle();
+    test_logistic_unit_interval_invariant();
+    test_logistic_orbit_step_consistency();
     test_lorenz_fixed_points();
     test_lorenz_euler_step();
     test_lorenz_orbit_bounded();

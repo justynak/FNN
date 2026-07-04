@@ -23,5 +23,3 @@ jobs:
       - name: Build FNN
         run: make -j"$(nproc)"
 
-      - name: Build MutualInformation
-        run: make -C MutualInformation -j"$(nproc)"

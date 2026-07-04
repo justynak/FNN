@@ -7,6 +7,7 @@
 #include "core/fnn.h"
 #include "core/henon.h"
 #include "core/ikeda.h"
+#include "core/logistic.h"
 #include "core/lorenz.h"
 #include "core/mutual_information.h"
 
@@ -87,7 +88,42 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     setupAttractorsTab();
+    setupLogisticTab();
     setupTakensTab();
+}
+
+void MainWindow::setupLogisticTab()
+{
+    QCustomPlot *plot = ui->logisticPlot;
+    plot->addGraph();
+    plot->graph(0)->setLineStyle(QCPGraph::lsNone);
+    plot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 2));
+    plot->xAxis->setLabel("n");
+    plot->yAxis->setLabel("x[n]");
+    addTitle(plot, "Logistic map  x' = r·x·(1−x)");
+    plot->yAxis->setRange(0.0, 1.0);
+
+    connect(ui->rSlider, &QSlider::valueChanged,
+            this, &MainWindow::updateLogisticPlot);
+    updateLogisticPlot(ui->rSlider->value());
+}
+
+void MainWindow::updateLogisticPlot(int sliderValue)
+{
+    const double r = sliderValue / 100.0;
+    ui->rValueLabel->setText(QString("r = %1").arg(r, 0, 'f', 2));
+
+    const auto orbit = fnn::logistic_orbit(0.5, r, 1000);
+    QList<double> n, x;
+    n.reserve(int(orbit.size()));
+    x.reserve(int(orbit.size()));
+    for (size_t i = 0; i < orbit.size(); ++i) {
+        n.append(double(i));
+        x.append(orbit[i]);
+    }
+    ui->logisticPlot->graph(0)->setData(n, x);
+    ui->logisticPlot->xAxis->setRange(0, double(orbit.size()));
+    ui->logisticPlot->replot();
 }
 
 void MainWindow::setupAttractorsTab()
@@ -153,7 +189,7 @@ void MainWindow::setupTakensTab()
 
     ui->statusBar->showMessage(
         QString("τ = %1 samples (first AMI minimum) · m = %2 (first dimension "
-                "with < 2%% false neighbors)").arg(tau).arg(m));
+                "with < 2% false neighbors)").arg(tau).arg(m));
 }
 
 bool MainWindow::saveScreenshots(const QString &dir)
