@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "core/integrate.h"
 #include "core/point.h"
 
 namespace fnn {
@@ -26,12 +27,16 @@ inline Point3 lorenz_deriv(Point3 p, const LorenzParams &prm = {})
 
 inline Point3 lorenz_euler_step(Point3 p, double dt, const LorenzParams &prm = {})
 {
-    const Point3 d = lorenz_deriv(p, prm);
-    return {p.x + d.x * dt, p.y + d.y * dt, p.z + d.z * dt};
+    return euler_step(p, dt, [&](Point3 q) { return lorenz_deriv(q, prm); });
 }
 
-// Integrates with forward Euler; good enough for plotting the attractor.
-// The returned orbit holds the integration steps only (init is not included).
+inline Point3 lorenz_rk4_step(Point3 p, double dt, const LorenzParams &prm = {})
+{
+    return rk4_step(p, dt, [&](Point3 q) { return lorenz_deriv(q, prm); });
+}
+
+// Integrates with classical RK4. The returned orbit holds the integration
+// steps only (init is not included).
 inline std::vector<Point3> lorenz_orbit(Point3 init, double dt, int count,
                                         const LorenzParams &prm = {})
 {
@@ -39,7 +44,7 @@ inline std::vector<Point3> lorenz_orbit(Point3 init, double dt, int count,
     orbit.reserve(count);
     Point3 p = init;
     for (int i = 0; i < count; ++i) {
-        p = lorenz_euler_step(p, dt, prm);
+        p = lorenz_rk4_step(p, dt, prm);
         orbit.push_back(p);
     }
     return orbit;
