@@ -18,26 +18,26 @@ struct LorenzParams {
     double beta = 8.0 / 3.0;
 };
 
-inline Point3 lorenz_deriv(Point3 p, const LorenzParams &prm = {})
+inline Point3 lorenz_deriv(const Point3 p, const LorenzParams &prm = {})
 {
     return {prm.sigma * (p.y - p.x),
             p.x * (prm.rho - p.z) - p.y,
             p.x * p.y - prm.beta * p.z};
 }
 
-inline Point3 lorenz_euler_step(Point3 p, double dt, const LorenzParams &prm = {})
+inline Point3 lorenz_euler_step(const Point3 p, const double dt, const LorenzParams &prm = {})
 {
     return euler_step(p, dt, [&](Point3 q) { return lorenz_deriv(q, prm); });
 }
 
-inline Point3 lorenz_rk4_step(Point3 p, double dt, const LorenzParams &prm = {})
+inline Point3 lorenz_rk4_step(const Point3 p, const double dt, const LorenzParams &prm = {})
 {
     return rk4_step(p, dt, [&](Point3 q) { return lorenz_deriv(q, prm); });
 }
 
 // Integrates with classical RK4. The returned orbit holds the integration
 // steps only (init is not included).
-inline std::vector<Point3> lorenz_orbit(Point3 init, double dt, int count,
+inline std::vector<Point3> lorenz_orbit(const Point3 init, const double dt, const int count,
                                         const LorenzParams &prm = {})
 {
     std::vector<Point3> orbit;

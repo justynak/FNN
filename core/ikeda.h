@@ -22,12 +22,12 @@ struct IkedaParams {
     double d = 8.0;
 };
 
-inline double ikeda_phase(Point2 p, const IkedaParams &prm = {})
+inline double ikeda_phase(const Point2 p, const IkedaParams &prm = {})
 {
     return prm.c - prm.d / (p.x * p.x + p.y * p.y + 1.0);
 }
 
-inline Point2 ikeda_step(Point2 p, const IkedaParams &prm = {})
+inline Point2 ikeda_step(const Point2 p, const IkedaParams &prm = {})
 {
     const double z = ikeda_phase(p, prm);
     return {prm.a + prm.b * (p.x * std::cos(z) - p.y * std::sin(z)),
@@ -36,7 +36,7 @@ inline Point2 ikeda_step(Point2 p, const IkedaParams &prm = {})
 
 // Iterates the map `count` times from `init`; the returned orbit holds the
 // iterates only (init itself is not included).
-inline std::vector<Point2> ikeda_orbit(Point2 init, int count,
+inline std::vector<Point2> ikeda_orbit(const Point2 init, const int count,
                                        const IkedaParams &prm = {})
 {
     std::vector<Point2> orbit;

@@ -8,14 +8,14 @@ namespace fnn {
 // Logistic map:  x' = r * x * (1 - x). For r in [0,4] the unit interval
 // maps into itself; the period-doubling cascade into chaos happens as
 // r -> 4.
-inline double logistic_step(double x, double r)
+inline double logistic_step(const double x, const double r)
 {
     return r * x * (1.0 - x);
 }
 
 // Iterates the map `count` times from `x0`; the returned orbit holds the
 // iterates only (x0 itself is not included).
-inline std::vector<double> logistic_orbit(double x0, double r, int count)
+inline std::vector<double> logistic_orbit(const double x0, const double r, const int count)
 {
     std::vector<double> orbit;
     orbit.reserve(count);

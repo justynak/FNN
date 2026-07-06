@@ -24,7 +24,7 @@ struct FnnParams {
 // Only points whose (dim+1)-th coordinate exists participate. Neighbor
 // search is brute force O(N^2) — fine for the ~10^3..10^4 points used here.
 inline double false_neighbor_fraction(const std::vector<double> &signal,
-                                      int dim, int lag,
+                                      const int dim, const int lag,
                                       const FnnParams &prm = {})
 {
     const int count = delay_vector_count(int(signal.size()), dim + 1, lag);
@@ -77,7 +77,7 @@ inline double false_neighbor_fraction(const std::vector<double> &signal,
 // holds the fraction at dimension d. The embedding dimension m is the
 // smallest d where the fraction drops to ~0.
 inline std::vector<double> fnn_curve(const std::vector<double> &signal,
-                                     int max_dim, int lag,
+                                     const int max_dim, const int lag,
                                      const FnnParams &prm = {})
 {
     std::vector<double> curve;

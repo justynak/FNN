@@ -207,6 +207,17 @@ static std::vector<double> henon_x(int count)
     return x;
 }
 
+// Canonical Lorenz test signal: x-component of `steps` RK4 steps at dt=0.01
+// from {1.2, 1.3, 1.6}, with the first 500 samples dropped as transient.
+static std::vector<double> lorenz_x(int steps)
+{
+    std::vector<double> x;
+    const auto orbit = lorenz_orbit({1.2, 1.3, 1.6}, 0.01, steps);
+    for (size_t i = 500; i < orbit.size(); ++i)
+        x.push_back(orbit[i].x);
+    return x;
+}
+
 static void test_ami_debruijn_zero_at_lag1()
 {
     // De Bruijn pattern 0,0,1,1 tiled, one extra element so the 4m pairs at
@@ -501,11 +512,7 @@ static void test_full_recipe_on_lorenz()
 {
     // The whole pipeline: AMI picks tau, FNN picks m; the Lorenz attractor
     // must embed at m = 3.
-    std::vector<double> x;
-    const auto orbit = lorenz_orbit({1.2, 1.3, 1.6}, 0.01, 4500);
-    for (size_t i = 500; i < orbit.size(); ++i) // drop the transient
-        x.push_back(orbit[i].x);
-
+    const auto x = lorenz_x(4500);
     const int tau = first_local_minimum(ami_curve(x, 40, 16));
     CHECK(tau >= 8 && tau <= 30); // literature value ~16 samples at dt=0.01
 
@@ -529,6 +536,43 @@ static void test_correlation_integral_exact()
     // Theiler window 1 leaves only the pair (0, 2.0), distance 2.
     const auto ct = correlation_integrals(pts, {1.0}, 1);
     CHECK(ct[0] == 0.0);
+}
+
+static void test_correlation_integral_unsorted_radii_and_theiler()
+{
+    // Same point set as the exact test; radii in arbitrary order must give
+    // the same integrals, index-aligned with the input.
+    const std::vector<std::vector<double>> pts{{0.0}, {0.5}, {2.0}};
+    const auto c = correlation_integrals(pts, {2.5, 0.6, 1.6});
+    CHECK_NEAR(c[0], 1.0, 1e-15);
+    CHECK_NEAR(c[1], 1.0 / 3.0, 1e-15);
+    CHECK_NEAR(c[2], 2.0 / 3.0, 1e-15);
+
+    // A negative Theiler window means 0, not self-pairs at distance zero.
+    const auto c0 = correlation_integrals(pts, {1.0});
+    const auto cn = correlation_integrals(pts, {1.0}, -2);
+    CHECK(cn[0] == c0[0]);
+
+    // A window wider than the data excludes every pair.
+    const auto ce = correlation_integrals(pts, {10.0}, 5);
+    CHECK(ce[0] == 0.0);
+}
+
+static void test_correlation_dimension_degenerate_inputs()
+{
+    // Degenerate arguments yield 0 (the convention set by AMI and FNN),
+    // never NaN, inf, or an out-of-range access.
+    const std::vector<std::vector<double>> pts{{0.0}, {0.5}, {2.0}};
+    CHECK(correlation_dimension(pts, 0.1, 0.1) == 0.0);      // empty range
+    CHECK(correlation_dimension(pts, 0.2, 0.1) == 0.0);      // reversed range
+    CHECK(correlation_dimension(pts, 0.0, 0.1) == 0.0);      // log(0) radius
+    CHECK(correlation_dimension(pts, 0.01, 1.0, 1) == 0.0);  // one radius
+    CHECK(correlation_dimension(pts, 0.01, 1.0, -3) == 0.0); // negative count
+    CHECK(correlation_dimension({}, 0.01, 1.0) == 0.0);      // no points
+    CHECK(correlation_dimension({{1.0}}, 0.01, 1.0) == 0.0); // no pairs
+
+    // Radii entirely below the smallest pair distance: no data to fit.
+    CHECK(correlation_dimension(pts, 0.001, 0.01) == 0.0);
 }
 
 static void test_correlation_dimension_known_sets()
@@ -568,11 +612,9 @@ static void test_correlation_dimension_lorenz_full_pipeline()
     // embed at m=3 -> D2 ~ 2.06 (published). The scaling region tops out
     // at ~5% of the attractor extent; larger radii sample the two-lobe
     // macrostructure and depress the slope (measured 1.83 at r_max=6).
-    std::vector<double> x;
-    const auto orbit = lorenz_orbit({1.2, 1.3, 1.6}, 0.01, 8500);
-    for (size_t i = 500; i < orbit.size(); ++i)
-        x.push_back(orbit[i].x);
+    const auto x = lorenz_x(8500);
     const int tau = first_local_minimum(ami_curve(x, 40, 16));
+    CHECK(tau >= 8 && tau <= 30); // a -1 (no minimum) must not reach delay_embedding
     const auto emb = delay_embedding(x, 3, tau);
     const double d2 = correlation_dimension(emb, 0.3, 2.0, 12, 2 * tau);
     CHECK(d2 > 1.9 && d2 < 2.2); // measured 2.07
@@ -612,6 +654,8 @@ int main()
     test_fnn_degenerate_inputs();
     test_full_recipe_on_lorenz();
     test_correlation_integral_exact();
+    test_correlation_integral_unsorted_radii_and_theiler();
+    test_correlation_dimension_degenerate_inputs();
     test_correlation_dimension_known_sets();
     test_correlation_dimension_henon();
     test_correlation_dimension_lorenz_full_pipeline();

@@ -10,35 +10,33 @@ namespace fnn {
 // Grassberger-Procaccia correlation integral: C(r) is the fraction of
 // distinct point pairs closer than r in the max-norm. Pairs closer than
 // `theiler` in time are excluded (Theiler window), so temporal correlation
-// along a trajectory doesn't masquerade as geometric structure.
+// along a trajectory doesn't masquerade as geometric structure. A negative
+// window is treated as 0.
 //
-// Radii must be sorted ascending. One O(N^2) pass serves all radii: each
-// pair increments the bin of the smallest radius that covers it, and a
-// suffix accumulation turns bin counts into C(r).
+// One O(N^2) pass serves all radii, in any order: each pair bumps the
+// count of every radius that covers it.
 inline std::vector<double> correlation_integrals(
     const std::vector<std::vector<double>> &points,
-    const std::vector<double> &radii, int theiler = 0)
+    const std::vector<double> &radii, const int theiler = 0)
 {
     const int n = int(points.size());
-    std::vector<long> bins(radii.size(), 0);
-    long pairs = 0;
+    const int window = std::max(theiler, 0);
+    std::vector<long long> counts(radii.size(), 0);
+    long long pairs = 0;
     for (int i = 0; i < n; ++i)
-        for (int j = i + 1 + theiler; j < n; ++j) {
+        for (int j = i + 1 + window; j < n; ++j) {
             double d = 0.0;
             for (size_t k = 0; k < points[i].size(); ++k)
                 d = std::max(d, std::fabs(points[i][k] - points[j][k]));
             ++pairs;
-            const auto it = std::upper_bound(radii.begin(), radii.end(), d);
-            if (it != radii.end())
-                ++bins[it - radii.begin()];
+            for (size_t r = 0; r < radii.size(); ++r)
+                if (d < radii[r])
+                    ++counts[r];
         }
 
     std::vector<double> c(radii.size(), 0.0);
-    long covered = 0;
-    for (size_t i = 0; i < radii.size(); ++i) {
-        covered += bins[i];
-        c[i] = pairs > 0 ? double(covered) / double(pairs) : 0.0;
-    }
+    for (size_t r = 0; r < radii.size(); ++r)
+        c[r] = pairs > 0 ? double(counts[r]) / double(pairs) : 0.0;
     return c;
 }
 
@@ -47,11 +45,15 @@ inline std::vector<double> correlation_integrals(
 // judgment call that depends on data size and noise level, so it is the
 // caller's explicit input — this function does not try to guess it.
 // Radii with no pairs yet are skipped; returns 0 if fewer than two radii
-// have data.
+// have data or the arguments are degenerate (n_radii < 2, r_min <= 0, or
+// r_max <= r_min).
 inline double correlation_dimension(
     const std::vector<std::vector<double>> &points,
-    double r_min, double r_max, int n_radii = 12, int theiler = 0)
+    const double r_min, const double r_max, const int n_radii = 12, const int theiler = 0)
 {
+    if (n_radii < 2 || r_min <= 0.0 || r_max <= r_min)
+        return 0.0;
+
     std::vector<double> radii(n_radii);
     const double step = std::log(r_max / r_min) / (n_radii - 1);
     for (int i = 0; i < n_radii; ++i)
