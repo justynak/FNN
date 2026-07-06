@@ -16,7 +16,6 @@ The data-generation and plotting parts are implemented; the analysis algorithms
 | `tests/` | Unit tests for `core/` (no framework, no Qt — plain C++) |
 | `main.cpp`, `mainwindow.*`, `mainwindow.ui` | Qt shell: generates the systems via `core/` and plots them |
 | `qcustomplot.cpp/.h` | Third-party plotting library ([QCustomPlot](https://www.qcustomplot.com/) 1.3.1), vendored |
-| `FNN.pro` | Original QtCreator project file, kept for reference |
 
 ## The math core (`core/`)
 

@@ -1,4 +1,4 @@
-# Makefile for the FNN application (replaces FNN.pro / qmake)
+# Makefile for the FNN application
 # Requires: qtbase5-dev, libqt5opengl5-dev
 
 QT_INC   := /usr/include/x86_64-linux-gnu/qt5

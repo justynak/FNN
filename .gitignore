@@ -32,3 +32,6 @@ build/
 #QtCtreator Qml
 *.qmlproject.user
 *.qmlproject.user.*
+
+# Qt OpenGL runtime artifact
+OGLdpf.log

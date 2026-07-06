@@ -10,13 +10,13 @@ namespace fnn {
 // solutions (global error ~ dt for Euler, ~ dt^4 for RK4).
 
 template <class Deriv>
-inline Point3 euler_step(Point3 p, double dt, Deriv deriv)
+inline Point3 euler_step(const Point3 p, const double dt, const Deriv deriv)
 {
     return p + dt * deriv(p);
 }
 
 template <class Deriv>
-inline Point3 rk4_step(Point3 p, double dt, Deriv deriv)
+inline Point3 rk4_step(const Point3 p, const double dt, const Deriv deriv)
 {
     const Point3 k1 = deriv(p);
     const Point3 k2 = deriv(p + 0.5 * dt * k1);

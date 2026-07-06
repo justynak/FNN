@@ -14,14 +14,14 @@ struct HenonParams {
     double b = 0.3;
 };
 
-inline Point2 henon_step(Point2 p, const HenonParams &prm = {})
+inline Point2 henon_step(const Point2 p, const HenonParams &prm = {})
 {
     return {1.0 - prm.a * p.x * p.x + p.y,
             prm.b * p.x};
 }
 
 // Exact analytic inverse (the map is invertible for b != 0).
-inline Point2 henon_inverse_step(Point2 p, const HenonParams &prm = {})
+inline Point2 henon_inverse_step(const Point2 p, const HenonParams &prm = {})
 {
     const double x = p.y / prm.b;
     return {x, p.x - 1.0 + prm.a * x * x};
@@ -29,7 +29,7 @@ inline Point2 henon_inverse_step(Point2 p, const HenonParams &prm = {})
 
 // Iterates the map `count` times from `init`; the returned orbit holds the
 // iterates only (init itself is not included).
-inline std::vector<Point2> henon_orbit(Point2 init, int count,
+inline std::vector<Point2> henon_orbit(const Point2 init, const int count,
                                        const HenonParams &prm = {})
 {
     std::vector<Point2> orbit;

@@ -7,7 +7,7 @@ namespace fnn {
 
 // Number of delay vectors of dimension `dim` with delay `lag` that fit in a
 // signal of `n` samples (0 if none fit).
-inline int delay_vector_count(int n, int dim, int lag)
+inline int delay_vector_count(const int n, const int dim, const int lag)
 {
     const int count = n - (dim - 1) * lag;
     return count > 0 ? count : 0;
@@ -16,7 +16,7 @@ inline int delay_vector_count(int n, int dim, int lag)
 // Takens delay embedding: reconstructs `dim`-dimensional state vectors from
 // a scalar signal, y_i = (x_i, x_{i+lag}, ..., x_{i+(dim-1)*lag}).
 inline std::vector<std::vector<double>>
-delay_embedding(const std::vector<double> &signal, int dim, int lag)
+delay_embedding(const std::vector<double> &signal, const int dim, const int lag)
 {
     const int count = delay_vector_count(int(signal.size()), dim, lag);
     std::vector<std::vector<double>> vectors;

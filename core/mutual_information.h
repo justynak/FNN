@@ -16,7 +16,7 @@ namespace fnn {
 // binned signal exactly. A constant, empty or too-short signal has zero
 // entropy and yields 0.
 inline double average_mutual_information(const std::vector<double> &signal,
-                                         int lag, int bins)
+                                         const int lag, const int bins)
 {
     const int pairs = int(signal.size()) - lag;
     if (lag < 0 || bins <= 0 || pairs <= 0)
@@ -58,7 +58,7 @@ inline double average_mutual_information(const std::vector<double> &signal,
 
 // AMI for every lag 0..max_lag; index into the result with the lag.
 inline std::vector<double> ami_curve(const std::vector<double> &signal,
-                                     int max_lag, int bins)
+                                     const int max_lag, const int bins)
 {
     std::vector<double> curve;
     curve.reserve(max_lag + 1);
